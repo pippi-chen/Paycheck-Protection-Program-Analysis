@@ -1,0 +1,168 @@
+# the packages that have already been used
+import pandas as pd
+import numpy as np
+import seaborn as sn
+import matplotlib 
+import matplotlib.pyplot as plt
+import sklearn
+from sklearn import preprocessing
+
+# All loans to Georgia businesses that remain in the PPP database (ppp_applicants_ga_full.csv)
+## import data
+filepath = "ppp_applicants_ga_full.csv"
+data = pd.read_csv(filepath)
+df = pd.DataFrame(data)
+
+## data preprocessing
+na = df.isna().any()
+NA_columns = df.columns[na].tolist()
+NA_columns
+
+## summary of the data (numerical variables)
+df.describe(include=[np.number])
+
+## summary of the data (categorical variables)
+df.describe(include=[object])
+
+## correct the data type
+## numerical to categorical
+df.naics_code = df.naics_code.apply(str)
+df.loan_number = df.loan_number.apply(str)
+df.sba_office_code = df.sba_office_code.apply(str)
+df.servicing_lender_location_id = df.servicing_lender_location_id.apply(str)
+df.originating_lender_location_id = df.originating_lender_location_id.apply(str)
+
+## address the NA values
+df.undisbursed_amount = df.undisbursed_amount.fillna(0)
+df[df.project_county_name.isna()] # find the observations records of the NA value
+df.project_county_name.fillna("LEE", limit = 1, inplace = True) # observation 39150: project_county_name = LEE
+df.project_county_name.fillna("FULTON", limit = 1, inplace = True) # observation 88268: project_county_name = FULTON
+df.project_county_name.fillna("COBB", limit = 1, inplace = True) # observation 177572: project_county_name = COBB
+df.project_county_name.fillna("COLQUITT", limit = 1, inplace = True) # observation 239504: project_county_name = COLQUITT
+df.project_county_name.fillna("GWINNETT", limit = 1, inplace = True) # observation 279180: project_county_name = GWINNETT
+df.project_county_name.fillna("COBB", limit = 1, inplace = True) # observation 396988: project_county_name = COBB
+
+## drop name
+df = df.drop(columns="name" ,axis=1)
+
+## drop forgiveness_amount
+df = df.drop(columns="forgiveness_amount" ,axis=1)
+
+## drop forgiveness_data
+df = df.drop(columns="forgiveness_date" ,axis=1)
+
+# Loans to Georgia businesses that were removed from the PPP database (ppp-removed-ga.xlsx)
+## import data
+filepath1 = "ppp-removed-ga.xlsx"
+data1 = pd.read_excel(filepath1)
+df1 = pd.DataFrame(data1)
+
+## Data Prepocessing
+na1 = df1.isna().any() 
+NA_columns1 = df1.columns[na1].tolist()
+NA_columns1
+
+## summary of loan_status_date (because I cannot find this variable on the below summaries)
+df1.loan_status_date.describe()
+
+## summary of the data (numerical variables)
+df1.describe(include=[np.number])
+
+## summary of the data (categorical variables)
+df1.describe(include=[object])
+
+## correct the data type
+## numerical to categorical
+df1.naics_code = df1.naics_code.apply(str)
+df1.loan_number = df1.loan_number.apply(str)
+df1.sba_office_code = df1.sba_office_code.apply(str)
+df1.servicing_lender_location_id = df1.servicing_lender_location_id.apply(str)
+df1.originating_lender_location_id = df1.originating_lender_location_id.apply(str)
+df1.forgiveness_date = df1.forgiveness_date.apply(str)
+
+## address the NA values
+df1.undisbursed_amount = df1.undisbursed_amount.fillna(0)
+df1 = df1.drop(columns="name" ,axis=1)
+df1 = df1.drop(columns="forgiveness_amount" ,axis=1)
+df1 = df1.drop(columns="forgiveness_date" ,axis=1)
+
+# Create the variable "Removed"
+df["removed"] = 0
+df1["removed"] = 1
+
+# Save datasets to new excel files
+df.to_csv('new_ppp_applicants_ga_full.csv')
+df1.to_excel('new_ppp-removed-ga.xlsx')
+
+# import the saved data set
+filepath_new_all = "new_combined_data.csv"
+data_new_all = pd.read_csv(filepath_new_all)
+df_new_all = pd.DataFrame(data_new_all)
+
+# Address missing values
+df_new_all.naics_code = df_new_all.naics_code.fillna("None")
+df_new_all.business_type = df_new_all.business_type.fillna("None")
+df_new_all.loan_status_date = df_new_all.loan_status_date.fillna("Other")
+
+# drop variables
+df = df_new_all.drop(columns=["Unnamed: 0", "Unnamed: 0.1", "address", "city", "zip", "date_approved", "congressional_district", "loan_number", "servicing_lender_location_id", "servicing_lender_address", "servicing_lender_city", "servicing_lender_zip", "project_city", "project_county_name", "project_zip", "originating_lender_city", "loan_status_date", "originating_lender_location_id"] ,axis=1)
+df1 = df_new_all.drop(columns="naics_code", axis=1) #
+df2 = df1.drop(columns="processing_method", axis=1) #
+df3 = df2.drop(columns="lender", axis=1) #
+df5 = df3.drop(columns="rural_urban_indicator", axis=1) #
+df6 = df5.drop(columns="lmi_indicator", axis=1) #
+df7 = df6.drop(columns="servicing_lender_state", axis=1) # 
+df8 = df7.drop(columns="project_state", axis=1) #
+df9 = df8.drop(columns="sba_office_code", axis=1) #
+df10 = df9.drop(columns="servicing_lender_name", axis=1) #
+df11 = df10.drop(columns="originating_lender_state", axis=1) #
+df13 = df11.drop(columns="hubzone_indicator", axis=1) #
+df15 = df13.drop(columns="current_approval_amount", axis=1) #
+df16 = df15.drop(columns="initial_approval_amount", axis=1) #
+df17 = df16.drop(columns="sba_guaranty_percentage", axis=1) #
+df19 = df17.drop(columns="jobs_retained", axis=1) #
+df20 = df19.drop(columns="amount", axis=1) #
+df21 = df20.drop(columns="loan_status", axis=1)
+
+# get dummies
+dm = pd.get_dummies(df21, drop_first=True)
+
+# data patitioning
+## set the target variable
+target = dm.removed
+
+## set the independent variables
+indep_data = dm.drop(columns="removed", axis=1)
+
+
+## split the data and target into training and validation sets
+from sklearn.model_selection import train_test_split
+data_train, data_valid, target_train, target_valid = train_test_split(indep_data, target, test_size=0.3, random_state=50)
+
+# logistic regression model
+from sklearn.linear_model import LogisticRegression
+logreg = LogisticRegression()
+logreg.fit(data_train,target_train)
+
+# prediction
+logreg.predict(data_valid)
+print("Independent variables in model = %s" % data_train.columns.tolist())
+
+
+## Accuracy
+from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score
+print("Accuracy for training = %.2f" % accuracy_score(target_train, logreg.predict(data_train)))
+print("Accuracy for validation = %.2f" % accuracy_score(target_valid, logreg.predict(data_valid)))
+
+## confusion model
+print(confusion_matrix(target_train, logreg.predict(data_train)))
+print(confusion_matrix(target_valid, logreg.predict(data_valid)))
+
+## roc
+print(roc_auc_score(target_train, logreg.predict(data_train)))
+print(roc_auc_score(target_valid, logreg.predict(data_valid)))
+
+
+
+
+
