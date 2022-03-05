@@ -104,6 +104,46 @@ df_new_all.naics_code = df_new_all.naics_code.fillna("None")
 df_new_all.business_type = df_new_all.business_type.fillna("None")
 df_new_all.loan_status_date = df_new_all.loan_status_date.fillna("Other")
 
+# Define Cohen's d function
+def cohen(sample_1, sample_2):
+  return (mean(sample_1) - mean(sample_2)) / (sqrt((stdev(sample_1) ** 2 + stdev(sample_2) ** 2) / 2))
+
+# Prepare variables to calculate Cohen's d
+df_fl = df_new_all.loc[df_new_all["removed"] == 0]
+df_rm = df_new_all.loc[df_new_all["removed"] == 1]
+df_fl["amount_per_job"] = df_fl.amount / df_fl.jobs_retained
+df_rm["amount_per_job"] = df_rm.amount / df_rm.jobs_retained
+lmi_num_fl = pd.Series(np.searchsorted(['N', 'Y'], df_fl.lmi_indicator), df_fl.index)
+lmi_num_rm = pd.Series(np.searchsorted(['N', 'Y'], df_rm.lmi_indicator), df_rm.index)
+RU_num_fl = pd.Series(np.searchsorted(['R', 'U'], df_fl.rural_urban_indicator), df_fl.index)
+RU_num_rm = pd.Series(np.searchsorted(['R', 'U'], df_rm.rural_urban_indicator), df_rm.index)
+hub_num_fl = pd.Series(np.searchsorted(['N', 'Y'], df_fl.hubzone_indicator), df_fl.index)
+hub_num_rm = pd.Series(np.searchsorted(['N', 'Y'], df_rm.hubzone_indicator), df_rm.index)
+job_noSP_fl = df_fl[df_fl.business_type != "Sole Proprietorship"]
+job_noSP_fl = job_noSP_fl[job_noSP_fl.business_type != "Self-Employed Individuals"]
+job_noSP_rm = df_rm[df_rm.business_type != "Sole Proprietorship"]
+job_noSP_rm = job_noSP_rm[job_noSP_rm.business_type != "Self-Employed Individuals"]
+
+# Calculate Cohen's d
+print("The effect sample size for LMI indicator is",cohen(lmi_num_fl, lmi_num_rm))
+print("The effect sample size for Rural Urban indicator is", cohen(RU_num_fl, RU_num_rm))
+print("The effect sample size for Hubzone indicator is", cohen(hub_num_fl, hub_num_rm))
+print("The effect sample size for amount is", cohen(df_fl.amount, df_rm.amount))
+print("The effect sample size for amount per jobs retained is", cohen(df_fl.amount_per_job[df_fl.jobs_retained != 0], df_rm.amount_per_job[df_rm.jobs_retained != 0]))
+print("The effect sample size for term", cohen(df_fl.term, df_rm.term))
+print("The effect sample size for jobs retained", cohen(df_fl.jobs_retained, df_rm.jobs_retained))
+print("The effect sample size for approval amount difference", cohen(df_fl.current_approval_amount - df_fl.initial_approval_amount, df_rm.current_approval_amount - df_rm.initial_approval_amount))
+print("The effect sample size for jobs retained without sole proprietorship and self-employed individuals", cohen(job_noSP_fl.jobs_retained, job_noSP_rm.jobs_retained))
+
+# Correlation Analysis
+df_new_all_corr = df_new_all
+df_new_all_corr.drop(["sba_office_code", "term", "sba_guaranty_percentage", "servicing_lender_location_id", "originating_lender_location_id", "Unnamed: 0", "naics_code", "loan_number", "removed"], axis = 1, inplace = True)
+corr = df_new_all_corr.corr()
+mask = np.triu(np.ones_like(corr, dtype = bool))
+cmap = sn.diverging_palette(230, 20, as_cmap = True)
+plt.show(sn.heatmap(corr, mask = mask, cmap = cmap, vmax = 1, vmin= -1, center = 0, annot = True, 
+            square = True, linewidths = .3, cbar_kws = {"shrink": .5}, fmt='.2f'))
+
 # drop variables
 df = df_new_all.drop(columns=["Unnamed: 0", "Unnamed: 0.1", "address", "city", "zip", "date_approved", "congressional_district", "loan_number", "servicing_lender_location_id", "servicing_lender_address", "servicing_lender_city", "servicing_lender_zip", "project_city", "project_county_name", "project_zip", "originating_lender_city", "loan_status_date", "originating_lender_location_id"] ,axis=1)
 df1 = df_new_all.drop(columns="naics_code", axis=1) #
